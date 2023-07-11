@@ -113,11 +113,35 @@ func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
 }
 
 func (d *DnsTweak) ListenAndServe(addr string) error {
-	server := dns.Server{
-		Addr:    addr,
-		Net:     "udp",
-		Handler: d,
+	log.Println("dnstweak starts")
+
+	addrs := make([]string, 0)
+
+	if addr != "" {
+		addrs = append(addrs, addr)
+	} else {
+		for i := 1; i < 256; i++ {
+			a := fmt.Sprintf("127.0.0.%d:53", i)
+			addrs = append(addrs, a)
+		}
+		addrs = append(addrs, "127.0.0.1:0")
 	}
 
-	return server.ListenAndServe()
+	var err error
+	for _, a := range addrs {
+		server := dns.Server{
+			Addr:    a,
+			Net:     "udp",
+			Handler: d,
+		}
+		server.NotifyStartedFunc = func() {
+			log.Printf("listening on %v\n", server.PacketConn.LocalAddr())
+		}
+
+		err = server.ListenAndServe()
+		if err != nil {
+			log.Printf("%s: %v\n", a, err)
+		}
+	}
+	return err
 }
