@@ -74,6 +74,7 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 		}
 		line += strings.Join(ips, ",")
 	} else {
+		// TODO: better formatting of other types of answer, most importantly CNAME, AAAA, PTR
 		line += fmt.Sprintf(": %v", msg.Answer)
 	}
 	if overridden {
@@ -122,7 +123,7 @@ func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
 func (d *DnsTweak) SetupResolvConf(server dns.Server) {
 	oldContent, resolver, err := UpdateResolvConf(server.PacketConn.LocalAddr().String())
 	if err != nil {
-		log.Printf("%v\n", err)
+		log.Printf("%v (do you need to be root?)\n", err)
 	}
 	if resolver != "" {
 		if d.Upstream == "" {
