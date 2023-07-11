@@ -115,8 +115,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: dnstweak [options] SPEC...\n\noptions:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a comma-separated list of 1 or more IP addresses.\n")
-		fmt.Fprintf(os.Stderr, "dnstweak is a program by James Stanley. You can email me at james@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
+		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses.\n\n")
+		fmt.Fprintf(os.Stderr, "dnstweak is a program by James Stanley. You can email me at\njames@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
 	}
 	flag.Parse()
 
