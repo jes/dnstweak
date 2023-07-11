@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 
 	"github.com/miekg/dns"
 )
@@ -22,8 +23,17 @@ func (handler *MyHandler) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 	}
 
 	fmt.Println("rtt = %v", rtt)
-	for _, question := range msg.Question {
-		fmt.Printf("question: %v\n", question)
+	for _, answer := range r.Answer {
+		fmt.Printf("answer: %#v\n", answer)
+		switch answer.(type) {
+		case *dns.A:
+			a := answer.(*dns.A)
+			// TODO: not hard-coded
+			if a.Hdr.Name == "google.com." {
+				a.A = net.IP{127, 0, 0, 1}
+			}
+		}
+
 	}
 
 	w.WriteMsg(r)
