@@ -5,14 +5,19 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/miekg/dns"
 )
 
 type DnsTweak struct {
-	Override map[string][]net.IP
-	Upstream string
+	Override             map[string][]net.IP
+	Upstream             string
+	SpliceIntoResolvConf bool
+	OldResolvConf        string
 }
 
 func A_record(name string, ipaddr net.IP) *dns.A {
@@ -59,7 +64,7 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 
 	// format answer for A queries only
 	if msg.Question[0].Qtype == dns.TypeA {
-		line = line + ": "
+		line += ": "
 		ips := make([]string, 0)
 		for _, answer := range msg.Answer {
 			switch answer.(type) {
@@ -67,10 +72,12 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 				ips = append(ips, fmt.Sprintf("%v", answer.(*dns.A).A))
 			}
 		}
-		line = line + strings.Join(ips, ",")
+		line += strings.Join(ips, ",")
+	} else {
+		line += fmt.Sprintf(": %v", msg.Answer)
 	}
 	if overridden {
-		line = line + " (overridden)"
+		line += " (overridden)"
 	}
 	log.Printf("%s\n", line)
 }
@@ -112,6 +119,42 @@ func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
 	return r
 }
 
+func (d *DnsTweak) SetupResolvConf(server dns.Server) {
+	oldContent, resolver, err := UpdateResolvConf(server.PacketConn.LocalAddr().String())
+	if err != nil {
+		log.Printf("%v\n", err)
+	}
+	if resolver != "" {
+		if d.Upstream == "" {
+			log.Printf("using %s as upstream resolver\n", resolver)
+			d.Upstream = resolver
+		}
+	}
+	if oldContent != "" {
+		d.OldResolvConf = oldContent
+		go d.HandleSignals()
+	}
+}
+
+func (d *DnsTweak) HandleSignals() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+
+	sig := <-c
+	log.Printf("received signal: %v\n", sig)
+	d.Finish()
+}
+
+func (d *DnsTweak) Finish() {
+	if d.SpliceIntoResolvConf {
+		err := RestoreResolvConf(d.OldResolvConf)
+		if err != nil {
+			log.Printf("%v", err)
+		}
+	}
+	os.Exit(0)
+}
+
 func (d *DnsTweak) ListenAndServe(addr string) error {
 	log.Println("dnstweak starts")
 
@@ -136,6 +179,9 @@ func (d *DnsTweak) ListenAndServe(addr string) error {
 		}
 		server.NotifyStartedFunc = func() {
 			log.Printf("listening on %v\n", server.PacketConn.LocalAddr())
+			if d.SpliceIntoResolvConf {
+				d.SetupResolvConf(server)
+			}
 		}
 
 		err = server.ListenAndServe()

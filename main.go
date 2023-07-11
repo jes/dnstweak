@@ -37,12 +37,14 @@ func parseOverrideSpec(spec string, override map[string][]net.IP) {
 
 func main() {
 	listen := flag.String("listen", "", "listen address (IP:PORT or just PORT) (default: see below)")
-	upstream := flag.String("upstream", "8.8.8.8:53", "upstream DNS server (IP:PORT or just IP)")
+	upstream := flag.String("upstream", "", "upstream DNS server (IP:PORT or just IP) (default: see below)")
+	noResolvConf := flag.Bool("no-resolvconf", false, "disable automatic update of /etc/resolv.conf")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: dnstweak [options] SPEC...\n\noptions:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "In the absence of -listen, dnstweak will first try to listen on any loopback IP\naddress (127.0.0.0/24) on port 53, and failing that use a random port number on\n127.0.0.1\n")
+		fmt.Fprintf(os.Stderr, "In the absence of -listen, dnstweak will first try to listen on any loopback IP\naddress (127.0.0.0/24) on port 53, and failing that use a random port number on\n127.0.0.1.\n\n")
+		fmt.Fprintf(os.Stderr, "In the absence of -upstream, dnstweak will take the first nameserver configured\nin /etc/resolv.conf.\n\n")
 		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses.\n\n")
 		fmt.Fprintf(os.Stderr, "dnstweak is a program by James Stanley. You can email me at\njames@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
 	}
@@ -54,7 +56,7 @@ func main() {
 	}
 
 	upstreamAddress := *upstream
-	if !strings.Contains(upstreamAddress, ":") {
+	if upstreamAddress != "" && !strings.Contains(upstreamAddress, ":") {
 		upstreamAddress = upstreamAddress + ":53"
 	}
 
@@ -64,8 +66,9 @@ func main() {
 	}
 
 	dnstweak := DnsTweak{
-		Override: override,
-		Upstream: upstreamAddress,
+		Override:             override,
+		Upstream:             upstreamAddress,
+		SpliceIntoResolvConf: !*noResolvConf,
 	}
 	err := dnstweak.ListenAndServe(listenAddress)
 

@@ -22,8 +22,5 @@ Future:
  - some way to make NXDOMAIN for a given domain
 
 Todo:
- - parse existing resolv.conf
- - write new resolv.conf
- - forward requests to the previous resolver
- - put resolv.conf back on exit
  - work out the originating PID of each request
+ - drop privileges?
