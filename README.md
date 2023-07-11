@@ -27,6 +27,11 @@ responses to stdout. Once you stop it with Ctrl-C it will put the previous
 Sometimes you want to test how a piece of software responds to different DNS
 records without actually changing the real DNS records.
 
+## Why not?
+
+If it crashes it will trash your `/etc/resolv.conf`. I recommend taking a backup
+copy of `/etc/resolv.conf` before you start.
+
 ## Example session
 
 Open 2 terminal windows. We'll run `dnstweak` in the first and `ping` in
