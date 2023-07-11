@@ -17,6 +17,7 @@ type DnsTweak struct {
 	Override             map[string][]net.IP
 	Upstream             string
 	SpliceIntoResolvConf bool
+	LookInProc           bool
 	OldResolvConf        string
 }
 
@@ -40,12 +41,12 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 
 	clientProcess := ""
 
-	// TODO: look at w.RemoteAddr() to find out if it's a local connection,
-	// and if so try to find out which process is on the other end
-	switch w.RemoteAddr().(type) {
-	case *net.UDPAddr:
-		u := w.RemoteAddr().(*net.UDPAddr)
-		clientProcess = FindProcess(u)
+	if d.LookInProc {
+		switch w.RemoteAddr().(type) {
+		case *net.UDPAddr:
+			u := w.RemoteAddr().(*net.UDPAddr)
+			clientProcess = FindProcess(u)
+		}
 	}
 
 	r, overridden := d.Response(msg)

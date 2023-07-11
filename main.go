@@ -39,6 +39,7 @@ func main() {
 	listen := flag.String("listen", "", "listen address (IP:PORT or just PORT) (default: see below)")
 	upstream := flag.String("upstream", "", "upstream DNS server (IP:PORT or just IP) (default: see below)")
 	noResolvConf := flag.Bool("no-resolvconf", false, "disable automatic update of /etc/resolv.conf")
+	noProc := flag.Bool("no-proc", false, "disable discovering the client process by looking in /proc")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: dnstweak [options] SPEC...\n\noptions:\n")
 		flag.PrintDefaults()
@@ -69,6 +70,7 @@ func main() {
 		Override:             override,
 		Upstream:             upstreamAddress,
 		SpliceIntoResolvConf: !*noResolvConf,
+		LookInProc:           !*noProc,
 	}
 	err := dnstweak.ListenAndServe(listenAddress)
 
