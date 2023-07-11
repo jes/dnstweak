@@ -38,19 +38,26 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 		log.Fatal("unsupported question set length: %d (expected 1)", len(msg.Question))
 	}
 
+	clientProcess := ""
+
 	// TODO: look at w.RemoteAddr() to find out if it's a local connection,
 	// and if so try to find out which process is on the other end
+	switch w.RemoteAddr().(type) {
+	case *net.UDPAddr:
+		u := w.RemoteAddr().(*net.UDPAddr)
+		clientProcess = FindProcess(u)
+	}
 
 	r, overridden := d.Response(msg)
 	if !overridden {
 		r = d.PassThrough(msg)
 	}
 
-	d.Log(w, r, overridden)
+	d.Log(w, r, overridden, clientProcess)
 	w.WriteMsg(r)
 }
 
-func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
+func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool, client string) {
 	qtype := dns.Type(msg.Question[0].Qtype)
 	name := msg.Question[0].Name
 
@@ -60,7 +67,12 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 	}
 
 	// format question
-	line := fmt.Sprintf("%v: %v %s", w.RemoteAddr(), qtype, name)
+	var line string
+	if client == "" {
+		line = fmt.Sprintf("%v: %v %s", w.RemoteAddr(), qtype, name)
+	} else {
+		line = fmt.Sprintf("%v (%s): %v %s", w.RemoteAddr(), client, qtype, name)
+	}
 
 	// format answer for A queries only
 	if msg.Question[0].Qtype == dns.TypeA {
@@ -187,7 +199,7 @@ func (d *DnsTweak) ListenAndServe(addr string) error {
 
 		err = server.ListenAndServe()
 		if err != nil {
-			log.Printf("%s: %v\n", a, err)
+			log.Printf("%v\n", err)
 		}
 	}
 	return err

@@ -38,6 +38,7 @@ func UpdateResolvConf(resolver string) (string, string, error) {
 
 	// TODO: put oldContent in but commented out, to help users restore it?
 	// how do we make sure we don't end up with 100 copies of it concatenated?
+	// or copy it to a backup file?
 
 	err = os.WriteFile("/etc/resolv.conf", []byte(newContent), 0644)
 	return content, oldResolver, err
