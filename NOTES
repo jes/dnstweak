@@ -1,0 +1,20 @@
+Does resolv.conf allow explicit port numbers? If so, how?
+    No.
+
+What is the best way to run a DNS server in Go?
+    https://github.com/miekg/dns ?
+
+Can I work out what PID a request comes from, for logging purposes?
+
+Requirements for MVP:
+ - intercept A lookups
+ - pass-through non-A lookups
+ - support multiple IP addresses and return them in a random order
+
+Nice-to-have:
+ - automatically insert into resolv.conf
+ - listen on ipv6 as well as ipv4
+
+Future:
+ - maybe intercept CNAME, AAAA, etc.
+ - support the zonefile idea
