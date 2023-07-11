@@ -18,6 +18,8 @@ Nice-to-have:
 Future:
  - maybe intercept CNAME, AAAA, etc.
  - support the zonefile idea
+ - option to populate overrides from /etc/hosts
+ - some way to make NXDOMAIN for a given domain
 
 Todo:
  - parse existing resolv.conf
