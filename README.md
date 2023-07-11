@@ -2,41 +2,93 @@
 
 **Quick local DNS modification tool**
 
-**This is not implemented yet**
-
-`dnstweak` will be a program that allows you to run something like:
+`dnstweak` is a program that allows you to run something like:
 
     $ dnstweak foo.example.com=10.0.0.1,10.0.0.2
 
-It will then launch a DNS server that passes all lookups except A lookups for
-`foo.example.com` on to whatever was the previously-configured resolver in
+It will then launch a DNS server that passes all lookups (except A lookups for
+`foo.example.com`) on to whatever was the previously-configured resolver in
 `/etc/resolv.conf`, and inserts itself as the new resolver in
 `/etc/resolv.conf`. Lookups for `foo.example.com` will get the 2 given A records
 (`10.0.0.1` and `10.0.0.2`) in a random order. It will also log all requests and
 responses to stdout. Once you stop it with Ctrl-C it will put the previous
 `/etc/resolv.conf` contents back and exit.
 
-It will also support usage like:
+## Features
 
-    $ dnstweak -f example.com.zone
+`dnstweak` can:
 
-To load the given zone file (in something resembling BIND's format) to give more
-fine-grained control.
+ - forge responses to select DNS requests configured on the command line
+ - automatically take over all system DNS queries by inserting itself into `/etc/resolv.conf`
+ - lookup client addresses in `procfs` to find out which process a request came from
 
 ## Why?
 
 Sometimes you want to test how a piece of software responds to different DNS
 records without actually changing the real DNS records.
 
+## Example session
+
+Open 2 terminal windows. We'll run `dnstweak` in the first and `ping` in
+the second.
+
+First terminal:
+
+    $ sudo ./dnstweak example.com=127.0.0.1
+    2023/07/11 20:41:35 dnstweak starts
+    2023/07/11 20:41:35 listening on 127.0.0.1:53
+    2023/07/11 20:41:35 using 127.0.0.53:53 as upstream resolver
+
+`dnstweak` stays running. It has inserted itself as the local resolver by
+modifying `/etc/resolv.conf`.
+
+If you run `dnstweak` as a non-root user, it will still work as a DNS server,
+but it won't be able to listen on port 53 or insert itself into `/etc/resolv.conf`.
+
+In the other terminal, start a `ping` to `example.com`:
+
+    $ ping example.com
+
+Now we get some log output from `dnstweak` in our first terminal:
+
+    2023/07/11 20:41:37 127.0.0.1:48439 (ping/9975): A example.com: 127.0.0.1 (overridden)
+
+A request came from `127.0.0.1:48439`, which is a process called `ping` with
+PID 9975.
+It was an A lookup for `example.com`, and we returned `127.0.0.1`. Back in the other terminal:
+
+    PING example.com (127.0.0.1) 56(84) bytes of data.
+    64 bytes from localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.020 ms
+    64 bytes from localhost (127.0.0.1): icmp_seq=2 ttl=64 time=0.037 ms
+
+Great success.
+
 ## Usage
 
-    usage: dnstweak [-f ZONEFILE] SPEC...
+    usage: dnstweak [options] SPEC...
 
     options:
-        -f ZONEFILE    Load the given zonefile
+      -listen string
+            listen address (IP:PORT or just PORT) (default: see below)
+      -no-proc
+            disable discovering the client process by looking in /proc
+      -no-resolvconf
+            disable automatic update of /etc/resolv.conf
+      -upstream string
+            upstream DNS server (IP:PORT or just IP) (default: see below)
+
+    In the absence of -listen, dnstweak will first try to listen on any loopback IP
+    address (127.0.0.0/24) on port 53, and failing that use a random port number on
+    127.0.0.1.
+
+    In the absence of -upstream, dnstweak will take the first nameserver configured
+    in /etc/resolv.conf.
 
     Each SPEC is a hostname, followed by an "=" sign, followed by a
     comma-separated list of 1 or more IP addresses.
+
+    dnstweak is a program by James Stanley. You can email me at
+    james@incoherency.co.uk or read my blog at https://incoherency.co.uk/
 
 ## Build
 
@@ -46,7 +98,17 @@ records without actually changing the real DNS records.
 
 And then run:
 
-    $ ./dnstweak
+    $ ./dnstweak -help
+
+## Future
+
+In the future, maybe `dnstweak` will gain options to:
+
+ - listen on IPv6
+ - populate the DNS override map from `/etc/hosts`
+ - override responses to AAAA, CNAME, PTR, SRV requests
+ - make fake NXDOMAIN responses
+ - take a zonefile in a BIND-ish format instead of the made-up command-line format
 
 ## Other tools like this
 
