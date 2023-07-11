@@ -7,8 +7,6 @@ import (
 	"net"
 	"os"
 	"strings"
-
-	"github.com/miekg/dns"
 )
 
 func main() {
@@ -61,18 +59,11 @@ func main() {
 		upstreamAddress = upstreamAddress + ":53"
 	}
 
-	handler := DnsTweakHandler{
+	dnstweak := DnsTweak{
 		Override: override,
 		Upstream: upstreamAddress,
 	}
-
-	server := dns.Server{
-		Addr:    listenAddress,
-		Net:     "udp",
-		Handler: &handler,
-	}
-
-	err := server.ListenAndServe()
+	err := dnstweak.ListenAndServe(listenAddress)
 
 	if err != nil {
 		log.Fatal(err)

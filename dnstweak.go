@@ -10,7 +10,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-type DnsTweakHandler struct {
+type DnsTweak struct {
 	Override map[string][]net.IP
 	Upstream string
 }
@@ -27,22 +27,22 @@ func A_record(name string, ipaddr net.IP) *dns.A {
 	}
 }
 
-func (handler *DnsTweakHandler) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
+func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 	if len(msg.Question) != 1 {
 		// TODO: not fatal
 		log.Fatal("unsupported question set length: %d (expected 1)", len(msg.Question))
 	}
 
-	r, overridden := handler.Response(msg)
+	r, overridden := d.Response(msg)
 	if !overridden {
-		r = handler.PassThrough(msg)
+		r = d.PassThrough(msg)
 	}
 
-	handler.Log(r, overridden)
+	d.Log(r, overridden)
 	w.WriteMsg(r)
 }
 
-func (handler *DnsTweakHandler) Log(msg *dns.Msg, overridden bool) {
+func (d *DnsTweak) Log(msg *dns.Msg, overridden bool) {
 	qtype := dns.Type(msg.Question[0].Qtype)
 	name := msg.Question[0].Name
 
@@ -69,7 +69,7 @@ func (handler *DnsTweakHandler) Log(msg *dns.Msg, overridden bool) {
 	log.Printf("%s\n", line)
 }
 
-func (handler *DnsTweakHandler) Response(msg *dns.Msg) (*dns.Msg, bool) {
+func (d *DnsTweak) Response(msg *dns.Msg) (*dns.Msg, bool) {
 	qtype := msg.Question[0].Qtype
 	name := msg.Question[0].Name
 
@@ -77,7 +77,7 @@ func (handler *DnsTweakHandler) Response(msg *dns.Msg) (*dns.Msg, bool) {
 		return nil, false
 	}
 
-	override, exists := handler.Override[name]
+	override, exists := d.Override[name]
 	if !exists {
 		return nil, false
 	}
@@ -94,14 +94,24 @@ func (handler *DnsTweakHandler) Response(msg *dns.Msg) (*dns.Msg, bool) {
 	return r, true
 }
 
-func (handler *DnsTweakHandler) PassThrough(msg *dns.Msg) *dns.Msg {
+func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
 	c := new(dns.Client)
 
-	r, _, err := c.Exchange(msg, handler.Upstream)
+	r, _, err := c.Exchange(msg, d.Upstream)
 	if err != nil {
 		// TODO: not fatal
 		log.Fatal(err)
 	}
 
 	return r
+}
+
+func (d *DnsTweak) ListenAndServe(addr string) error {
+	server := dns.Server{
+		Addr:    addr,
+		Net:     "udp",
+		Handler: d,
+	}
+
+	return server.ListenAndServe()
 }
