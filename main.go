@@ -109,6 +109,8 @@ func (handler *DnsTweakHandler) PassThrough(msg *dns.Msg) *dns.Msg {
 }
 
 func main() {
+	listen := flag.String("listen", "127.0.0.1:1053", "listen address (IP:PORT or just PORT)")
+	upstream := flag.String("upstream", "8.8.8.8:53", "upstream DNS server (IP:PORT or just IP)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage: dnstweak [options] SPEC...\n\noptions:\n")
 		flag.PrintDefaults()
@@ -146,13 +148,23 @@ func main() {
 		}
 	}
 
+	listenAddress := *listen
+	if !strings.Contains(listenAddress, ":") {
+		listenAddress = "127.0.0.1:" + listenAddress
+	}
+
+	upstreamAddress := *upstream
+	if !strings.Contains(upstreamAddress, ":") {
+		upstreamAddress = upstreamAddress + ":53"
+	}
+
 	handler := DnsTweakHandler{
 		Override: override,
-		Upstream: "8.8.8.8:53",
+		Upstream: upstreamAddress,
 	}
 
 	server := dns.Server{
-		Addr:    "127.0.0.1:1053", // TODO: not hard-coded port
+		Addr:    listenAddress,
 		Net:     "udp",
 		Handler: &handler,
 	}
