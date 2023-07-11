@@ -46,7 +46,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\n")
 		fmt.Fprintf(os.Stderr, "In the absence of -listen, dnstweak will first try to listen on any loopback IP\naddress (127.0.0.0/24) on port 53, and failing that use a random port number on\n127.0.0.1.\n\n")
 		fmt.Fprintf(os.Stderr, "In the absence of -upstream, dnstweak will take the first nameserver configured\nin /etc/resolv.conf.\n\n")
-		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses.\n\n")
+		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses (for example\n\"example.com=127.0.0.1\").\n\n")
 		fmt.Fprintf(os.Stderr, "dnstweak is a program by James Stanley. You can email me at\njames@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
 	}
 	flag.Parse()

@@ -90,7 +90,8 @@ Great success.
     in /etc/resolv.conf.
 
     Each SPEC is a hostname, followed by an "=" sign, followed by a
-    comma-separated list of 1 or more IP addresses.
+    comma-separated list of 1 or more IP addresses (for example
+    "example.com=127.0.0.1").
 
     dnstweak is a program by James Stanley. You can email me at
     james@incoherency.co.uk or read my blog at https://incoherency.co.uk/
