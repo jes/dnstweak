@@ -1,18 +1,24 @@
 # dnstweak
 
-**Quick local DNS modification tool**
+**Quick local DNS spoofing tool**
 
 `dnstweak` is a program that allows you to run something like:
 
-    $ dnstweak foo.example.com=10.0.0.1,10.0.0.2
+    $ sudo ./dnstweak foo.example.com=10.0.0.1,10.0.0.2
 
-It will then launch a DNS server that passes all lookups (except A lookups for
-`foo.example.com`) on to whatever was the previously-configured resolver in
-`/etc/resolv.conf`, and inserts itself as the new resolver in
-`/etc/resolv.conf`. Lookups for `foo.example.com` will get the 2 given A records
-(`10.0.0.1` and `10.0.0.2`) in a random order. It will also log all requests and
+So that `foo.example.com` appears to resolve to `10.0.0.1` and `10.0.0.2`.
+
+It runs a DNS server that proxies all other lookups to the previous resolver from
+`/etc/resolv.conf`, and it inserts itself as the new resolver in
+`/etc/resolv.conf`.
+
+Lookups for `foo.example.com` will get the 2 given A records
+(`10.0.0.1` and `10.0.0.2`) in a random order. It also logs requests and
 responses to stdout. Once you stop it with Ctrl-C it will put the previous
-`/etc/resolv.conf` contents back and exit.
+`/etc/resolv.conf` contents back in place.
+
+See the [Releases](https://github.com/jes/dnstweak/releases/) page for Linux
+binaries, or build it yourself with `go build`.
 
 ## Features
 
@@ -69,6 +75,8 @@ It was an A lookup for `example.com`, and we returned `127.0.0.1`. Back in the o
 Great success.
 
 ## Usage
+
+    dnstweak v0.1
 
     usage: dnstweak [options] SPEC...
 

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 )
+
+var VERSION = "v0.1"
 
 // a spec should be like foo.example.com=1.2.3.4,5.6.7.8
 func parseOverrideSpec(spec string, override map[string][]net.IP) {
@@ -41,13 +42,15 @@ func main() {
 	noResolvConf := flag.Bool("no-resolvconf", false, "disable automatic update of /etc/resolv.conf")
 	noProc := flag.Bool("no-proc", false, "disable discovering the client process by looking in /proc")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: dnstweak [options] SPEC...\n\noptions:\n")
+		out := flag.CommandLine.Output()
+		fmt.Fprintf(out, "dnstweak %s\n\n", VERSION)
+		fmt.Fprintf(out, "usage: dnstweak [options] SPEC...\n\noptions:\n")
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, "In the absence of -listen, dnstweak will first try to listen on any loopback IP\naddress (127.0.0.0/24) on port 53, and failing that use a random port number on\n127.0.0.1.\n\n")
-		fmt.Fprintf(os.Stderr, "In the absence of -upstream, dnstweak will take the first nameserver configured\nin /etc/resolv.conf.\n\n")
-		fmt.Fprintf(os.Stderr, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses (for example\n\"example.com=127.0.0.1\").\n\n")
-		fmt.Fprintf(os.Stderr, "dnstweak is a program by James Stanley. You can email me at\njames@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
+		fmt.Fprintf(out, "\n")
+		fmt.Fprintf(out, "In the absence of -listen, dnstweak will first try to listen on any loopback IP\naddress (127.0.0.0/24) on port 53, and failing that use a random port number on\n127.0.0.1.\n\n")
+		fmt.Fprintf(out, "In the absence of -upstream, dnstweak will take the first nameserver configured\nin /etc/resolv.conf.\n\n")
+		fmt.Fprintf(out, "Each SPEC is a hostname, followed by an \"=\" sign, followed by a\ncomma-separated list of 1 or more IP addresses (for example\n\"example.com=127.0.0.1\").\n\n")
+		fmt.Fprintf(out, "dnstweak is a program by James Stanley. You can email me at\njames@incoherency.co.uk or read my blog at https://incoherency.co.uk/\n")
 	}
 	flag.Parse()
 
