@@ -62,7 +62,10 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 		line = line + ": "
 		ips := make([]string, 0)
 		for _, answer := range msg.Answer {
-			ips = append(ips, fmt.Sprintf("%v", answer.(*dns.A).A))
+			switch answer.(type) {
+			case *dns.A:
+				ips = append(ips, fmt.Sprintf("%v", answer.(*dns.A).A))
+			}
 		}
 		line = line + strings.Join(ips, ",")
 	}
