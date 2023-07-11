@@ -26,4 +26,3 @@ Todo:
  - forward requests to the previous resolver
  - put resolv.conf back on exit
  - work out the originating PID of each request
- - take arguments on command line
