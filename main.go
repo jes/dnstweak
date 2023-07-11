@@ -13,30 +13,44 @@ type MyHandler struct {
 }
 
 func (handler *MyHandler) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
-	c := new(dns.Client)
-	c.Net = "udp"
-
-	r, rtt, err := c.Exchange(msg, "8.8.8.8:53") // TODO: not hard-coded
-	if err != nil {
+	if len(msg.Question) != 1 {
 		// TODO: not fatal
-		log.Fatal(err)
+		log.Fatal("unsupported question set length: %d (expected 1)", len(msg.Question))
 	}
 
-	fmt.Println("rtt = %v", rtt)
-	for _, answer := range r.Answer {
-		fmt.Printf("answer: %#v\n", answer)
-		switch answer.(type) {
-		case *dns.A:
-			a := answer.(*dns.A)
-			// TODO: not hard-coded
-			if a.Hdr.Name == "google.com." {
-				a.A = net.IP{127, 0, 0, 1}
-			}
+	// if the question is an A lookup for a hostname we control, answer it ourselves, otherwise pass it on upstream
+	if msg.Question[0].Name == "google.com." && msg.Question[0].Qtype == dns.TypeA {
+		r := new(dns.Msg)
+		r.SetReply(msg)
+		rr := &dns.A{
+			Hdr: dns.RR_Header{
+				Name:   msg.Question[0].Name,
+				Rrtype: dns.TypeA,
+				Class:  dns.ClassINET,
+				Ttl:    60,
+			},
+			A: net.ParseIP("127.0.0.1"),
+		}
+		r.Answer = append(r.Answer, rr)
+		w.WriteMsg(r)
+	} else {
+		c := new(dns.Client)
+		c.Net = "udp"
+
+		r, rtt, err := c.Exchange(msg, "8.8.8.8:53") // TODO: not hard-coded
+		if err != nil {
+			// TODO: not fatal
+			log.Fatal(err)
 		}
 
-	}
+		fmt.Printf("rtt = %v\n", rtt)
 
-	w.WriteMsg(r)
+		fmt.Printf("r = %#v\n", r)
+		fmt.Printf("question set = %#v\n", r.Question)
+		fmt.Printf("answer set = %#v\n", r.Answer)
+
+		w.WriteMsg(r)
+	}
 }
 
 func main() {

@@ -18,3 +18,13 @@ Nice-to-have:
 Future:
  - maybe intercept CNAME, AAAA, etc.
  - support the zonefile idea
+
+Todo:
+ - parse existing resolv.conf
+ - listen on port 53 (what if there is already a local resolver?)
+ - write new resolv.conf
+ - forward requests to the previous resolver
+ - put resolv.conf back on exit
+ - work out the originating PID of each request
+ - terse log output
+ - take arguments on command line
