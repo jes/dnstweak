@@ -33,16 +33,19 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 		log.Fatal("unsupported question set length: %d (expected 1)", len(msg.Question))
 	}
 
+	// TODO: look at w.RemoteAddr() to find out if it's a local connection,
+	// and if so try to find out which process is on the other end
+
 	r, overridden := d.Response(msg)
 	if !overridden {
 		r = d.PassThrough(msg)
 	}
 
-	d.Log(r, overridden)
+	d.Log(w, r, overridden)
 	w.WriteMsg(r)
 }
 
-func (d *DnsTweak) Log(msg *dns.Msg, overridden bool) {
+func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool) {
 	qtype := dns.Type(msg.Question[0].Qtype)
 	name := msg.Question[0].Name
 
@@ -52,7 +55,7 @@ func (d *DnsTweak) Log(msg *dns.Msg, overridden bool) {
 	}
 
 	// format question
-	line := fmt.Sprintf("%v %s", qtype, name)
+	line := fmt.Sprintf("%v: %v %s", w.RemoteAddr(), qtype, name)
 
 	// format answer for A queries only
 	if msg.Question[0].Qtype == dns.TypeA {

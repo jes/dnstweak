@@ -26,3 +26,4 @@ Todo:
  - forward requests to the previous resolver
  - put resolv.conf back on exit
  - work out the originating PID of each request
+ - listen on 127.0.0.153:53 or something if 127.0.0.1:53 is already taken
