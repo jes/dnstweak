@@ -49,5 +49,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dnstweak.Finish() // just in case resolv.conf needs restoring
 }

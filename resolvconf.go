@@ -21,27 +21,47 @@ func UpdateResolvConf(resolver string) (string, string, error) {
 	newContent += "nameserver " + resolver + "\n"
 
 	oldResolver := ""
-	content := ""
+	oldLines := make([]string, 0)
 	scanner := bufio.NewScanner(f)
+	seenDnsTweak := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		content += line + "\n"
+		oldLines = append(oldLines, line)
 		line = strings.TrimLeft(line, " ")
 		if oldResolver == "" && strings.HasPrefix(line, "nameserver ") {
 			oldResolver = strings.TrimPrefix(line, "nameserver ") + ":53"
 		}
 
-		if strings.HasPrefix(strings.TrimLeft(line, " "), "search ") {
+		if strings.HasPrefix(line, "search ") {
 			newContent += line + "\n"
+		}
+
+		if strings.HasPrefix(line, "#dnstweak#") {
+			seenDnsTweak = true
 		}
 	}
 
-	// TODO: put oldContent in but commented out, to help users restore it?
-	// how do we make sure we don't end up with 100 copies of it concatenated?
-	// or copy it to a backup file?
+	if seenDnsTweak {
+		// if the old content was from dnstweak output, then strip it down to just
+		// what was there before dnstweak wrote it
+		oldLines2 := make([]string, 0)
+		for _, line := range oldLines {
+			if strings.HasPrefix(line, "#dnstweak#") {
+				oldLines2 = append(oldLines2, strings.TrimPrefix(line, "#dnstweak#"))
+			}
+		}
+		oldLines = oldLines2
+	}
+
+	oldContent := strings.Join(oldLines, "\n") + "\n"
+
+	// append the old content to the new content, with "#dnstweak#", so that it can be restored later
+	for _, line := range oldLines {
+		newContent += "#dnstweak#" + line + "\n"
+	}
 
 	err = os.WriteFile("/etc/resolv.conf", []byte(newContent), 0644)
-	return content, oldResolver, err
+	return oldContent, oldResolver, err
 }
 
 func RestoreResolvConf(contents string) error {

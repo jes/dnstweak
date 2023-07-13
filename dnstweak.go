@@ -224,6 +224,7 @@ func (d *DnsTweak) ListenAndServe(addr string) error {
 		if err != nil {
 			log.Printf("%v\n", err)
 		}
+		d.Finish() // just in case resolv.conf needs restoring
 	}
 	return err
 }

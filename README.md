@@ -33,11 +33,6 @@ binaries, or build it yourself with `go build`.
 Sometimes you want to test how a piece of software responds to different DNS
 records without actually changing the real DNS records.
 
-## Why not?
-
-If it crashes it will trash your `/etc/resolv.conf`. I recommend taking a backup
-copy of `/etc/resolv.conf` before you start.
-
 ## Example session
 
 Open 2 terminal windows. We'll run `dnstweak` in the first and `ping` in
@@ -137,6 +132,24 @@ In the future, maybe `dnstweak` will gain options to:
  - make fake NXDOMAIN responses
  - drop requests
  - take a zonefile in a BIND-ish format instead of the made-up command-line format
+
+## What happens to `resolv.conf` if `dnstweak` crashes?
+
+It will look something like this:
+
+    nameserver 127.0.0.1
+    search lan
+    #dnstweak## This file is managed by man:systemd-resolved(8). Do not edit.
+    #dnstweak##
+        [...]
+    #dnstweak#
+    #dnstweak#nameserver 127.0.0.53
+    #dnstweak#options edns0 trust-ad
+    #dnstweak#search lan
+
+The lines prefixed with `#dnstweak#` are the lines that were there before `dnstweak`
+took over. Delete all other lines and remove the "`#dnstweak#`" prefix, and you'll
+have your old `resolv.conf` back.
 
 ## Other tools like this
 
