@@ -19,6 +19,7 @@ type DnsTweak struct {
 	SpliceIntoResolvConf bool
 	LookInProc           bool
 	OldResolvConf        string
+	Server               *dns.Server
 }
 
 func A_record(name string, ipaddr net.IP) *dns.A {
@@ -151,8 +152,8 @@ func (d *DnsTweak) PassThrough(req *dns.Msg) *dns.Msg {
 	return resp
 }
 
-func (d *DnsTweak) SetupResolvConf(server dns.Server) {
-	oldContent, resolver, err := UpdateResolvConf(server.PacketConn.LocalAddr().String())
+func (d *DnsTweak) SetupResolvConf() {
+	oldContent, resolver, err := UpdateResolvConf(d.Server.PacketConn.LocalAddr().String())
 	if err != nil {
 		log.Printf("%v (do you need to be root?)\n", err)
 	}
@@ -175,6 +176,7 @@ func (d *DnsTweak) HandleSignals() {
 	sig := <-c
 	log.Printf("received signal: %v\n", sig)
 	d.Finish()
+	os.Exit(0)
 }
 
 func (d *DnsTweak) Finish() {
@@ -184,7 +186,7 @@ func (d *DnsTweak) Finish() {
 			log.Printf("%v", err)
 		}
 	}
-	os.Exit(0)
+	d.Server.Shutdown()
 }
 
 func (d *DnsTweak) ListenAndServe(addr string) error {
@@ -204,22 +206,52 @@ func (d *DnsTweak) ListenAndServe(addr string) error {
 
 	var err error
 	for _, a := range addrs {
-		server := dns.Server{
+		d.Server = &dns.Server{
 			Addr:    a,
 			Net:     "udp",
 			Handler: d,
 		}
-		server.NotifyStartedFunc = func() {
-			log.Printf("listening on %v\n", server.PacketConn.LocalAddr())
+		d.Server.NotifyStartedFunc = func() {
+			log.Printf("listening on %v\n", d.Server.PacketConn.LocalAddr())
 			if d.SpliceIntoResolvConf {
-				d.SetupResolvConf(server)
+				d.SetupResolvConf()
 			}
 		}
 
-		err = server.ListenAndServe()
+		err = d.Server.ListenAndServe()
 		if err != nil {
 			log.Printf("%v\n", err)
 		}
 	}
 	return err
+}
+
+// a spec should be like foo.example.com=1.2.3.4,5.6.7.8
+func (d *DnsTweak) AddOverrideSpec(spec string) {
+	if d.Override == nil {
+		d.Override = make(map[string][]net.IP)
+	}
+
+	host, ips_csv, found := strings.Cut(spec, "=")
+	if !found {
+		log.Fatalf("spec '%s' does not contain '='\n", spec)
+	}
+
+	// append trailing dot for FQDN
+	if host[len(host)-1] != '.' {
+		host = host + "."
+	}
+	if _, exists := d.Override[host]; !exists {
+		d.Override[host] = make([]net.IP, 0)
+	}
+
+	// add each of the IP addresses
+	ips := strings.Split(ips_csv, ",")
+	for _, ipstr := range ips {
+		ip := net.ParseIP(ipstr)
+		if ip == nil {
+			log.Fatalf("can't parse ip address '%s'", ipstr)
+		}
+		d.Override[host] = append(d.Override[host], ip)
+	}
 }
