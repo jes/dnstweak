@@ -46,8 +46,8 @@ func main() {
 		dnstweak.AddOverrideSpec(spec)
 	}
 	err := dnstweak.ListenAndServe(listenAddress)
-
 	if err != nil {
 		log.Fatal(err)
 	}
+	dnstweak.Finish() // just in case resolv.conf needs restoring
 }
