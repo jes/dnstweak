@@ -87,22 +87,23 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, req *dns.Msg, resp *dns.Msg, overri
 	}
 
 	if resp != nil {
-		// format answer for A queries only
-		if req.Question[0].Qtype == dns.TypeA {
+		switch req.Question[0].Qtype {
+		case dns.TypeA:
 			ips := make([]string, 0)
 			for _, answer := range resp.Answer {
 				switch answer.(type) {
 				case *dns.A:
 					// TODO: where the answer is an A record for a different domain than the one requested, somehow show this?
 					ips = append(ips, answer.(*dns.A).A.String())
+				case *dns.CNAME:
+					ips = append(ips, strings.TrimSuffix(answer.(*dns.CNAME).Target, "."))
 				default:
-					// TODO: better formatting of (for example) CNAME answers
 					ips = append(ips, answer.String())
 				}
 			}
 			line += strings.Join(ips, ",")
-		} else {
-			// TODO: better formatting of other types of answer, most importantly CNAME, AAAA, PTR
+		default:
+			// TODO: AAAA, PTR, more?
 			line += fmt.Sprintf("%v", resp.Answer)
 		}
 	} else {
