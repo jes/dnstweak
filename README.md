@@ -80,7 +80,7 @@ Or build it yourself (see below).
 
 ## Usage
 
-    dnstweak v0.1
+    dnstweak v0.2
 
     usage: dnstweak [options] SPEC...
 

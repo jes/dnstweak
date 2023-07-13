@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var VERSION = "v0.1"
+var VERSION = "v0.2"
 
 func main() {
 	listen := flag.String("listen", "", "listen address (IP:PORT or just PORT) (default: see below)")
