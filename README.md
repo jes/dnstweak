@@ -137,6 +137,7 @@ In the future, maybe `dnstweak` will gain options to:
 
 It will look something like this:
 
+    # created by dnstweak
     nameserver 127.0.0.1
     search lan
     #dnstweak## This file is managed by man:systemd-resolved(8). Do not edit.
@@ -148,8 +149,8 @@ It will look something like this:
     #dnstweak#search lan
 
 The lines prefixed with `#dnstweak#` are the lines that were there before `dnstweak`
-took over. Delete all other lines and remove the "`#dnstweak#`" prefix, and you'll
-have your old `resolv.conf` back.
+took over. Delete the uncommented lines at the top, and remove the "`#dnstweak#`"
+prefix from the rest, and you'll have your old `resolv.conf` back.
 
 ## Other tools like this
 
