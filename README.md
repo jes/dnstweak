@@ -114,6 +114,10 @@ And then run:
 
     $ ./dnstweak -help
 
+Run the tests with:
+
+    $ go test
+
 ## Future
 
 In the future, maybe `dnstweak` will gain options to:
@@ -122,6 +126,7 @@ In the future, maybe `dnstweak` will gain options to:
  - populate the DNS override map from `/etc/hosts`
  - override responses to AAAA, CNAME, PTR, SRV requests
  - make fake NXDOMAIN responses
+ - drop requests
  - take a zonefile in a BIND-ish format instead of the made-up command-line format
 
 ## Other tools like this
