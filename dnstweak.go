@@ -47,11 +47,10 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 
 	if len(req.Question) != 1 {
 		if clientProcess == "" {
-			log.Printf("%v: unsupported question set length: %d (expected 1)\n", w.RemoteAddr(), len(req.Question))
+			log.Printf("%v: unsupported question set length: %d (expected 1): %v\n", w.RemoteAddr(), len(req.Question), req.Question)
 		} else {
-			log.Printf("%v (%s): unsupported question set length: %d (expected 1)\n", w.RemoteAddr(), clientProcess, len(req.Question))
+			log.Printf("%v (%s): unsupported question set length: %d (expected 1): %v\n", w.RemoteAddr(), clientProcess, len(req.Question), req.Question)
 		}
-		// TODO: log the request even though it may have an empty question set
 		resp := d.PassThrough(req)
 		if resp != nil {
 			w.WriteMsg(resp)
