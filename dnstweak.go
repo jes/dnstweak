@@ -186,7 +186,9 @@ func (d *DnsTweak) Finish() {
 			log.Printf("%v", err)
 		}
 	}
-	d.Server.Shutdown()
+	if d.Server != nil {
+		d.Server.Shutdown()
+	}
 }
 
 func (d *DnsTweak) ListenAndServe(addr string) error {
