@@ -34,16 +34,6 @@ func A_record(name string, ipaddr net.IP) *dns.A {
 }
 
 func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
-	if len(req.Question) != 1 {
-		log.Printf("unsupported question set length: %d (expected 1)", len(req.Question))
-		// TODO: log the request even though it may have an empty question set
-		resp := d.PassThrough(req)
-		if resp != nil {
-			w.WriteMsg(resp)
-		}
-		return
-	}
-
 	clientProcess := ""
 
 	if d.LookInProc {
@@ -52,6 +42,20 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 			u := w.RemoteAddr().(*net.UDPAddr)
 			clientProcess = FindProcess(u)
 		}
+	}
+
+	if len(req.Question) != 1 {
+		if clientProcess == "" {
+			log.Printf("%v: unsupported question set length: %d (expected 1)\n", w.RemoteAddr(), len(req.Question))
+		} else {
+			log.Printf("%v (%s): unsupported question set length: %d (expected 1)\n", w.RemoteAddr(), clientProcess, len(req.Question))
+		}
+		// TODO: log the request even though it may have an empty question set
+		resp := d.PassThrough(req)
+		if resp != nil {
+			w.WriteMsg(resp)
+		}
+		return
 	}
 
 	resp, overridden := d.Response(req)
