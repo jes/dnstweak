@@ -54,11 +54,13 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 		r = d.PassThrough(msg)
 	}
 
-	d.Log(w, r, overridden, clientProcess)
-	w.WriteMsg(r)
+	d.Log(w, msg, r, overridden, clientProcess)
+	if r != nil {
+		w.WriteMsg(r)
+	}
 }
 
-func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool, client string) {
+func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, resp *dns.Msg, overridden bool, client string) {
 	qtype := dns.Type(msg.Question[0].Qtype)
 	name := msg.Question[0].Name
 
@@ -70,25 +72,32 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, overridden bool, clie
 	// format question
 	var line string
 	if client == "" {
-		line = fmt.Sprintf("%v: %v %s", w.RemoteAddr(), qtype, name)
+		line = fmt.Sprintf("%v: %v %s: ", w.RemoteAddr(), qtype, name)
 	} else {
-		line = fmt.Sprintf("%v (%s): %v %s", w.RemoteAddr(), client, qtype, name)
+		line = fmt.Sprintf("%v (%s): %v %s: ", w.RemoteAddr(), client, qtype, name)
 	}
 
-	// format answer for A queries only
-	if msg.Question[0].Qtype == dns.TypeA {
-		line += ": "
-		ips := make([]string, 0)
-		for _, answer := range msg.Answer {
-			switch answer.(type) {
-			case *dns.A:
-				ips = append(ips, fmt.Sprintf("%v", answer.(*dns.A).A))
+	if resp != nil {
+		// format answer for A queries only
+		if msg.Question[0].Qtype == dns.TypeA {
+			ips := make([]string, 0)
+			for _, answer := range resp.Answer {
+				switch answer.(type) {
+				case *dns.A:
+					// TODO: where the answer is an A record for a different domain than the one requested, somehow show this?
+					ips = append(ips, answer.(*dns.A).A.String())
+				default:
+					// TODO: better formatting of (for example) CNAME answers
+					ips = append(ips, answer.String())
+				}
 			}
+			line += strings.Join(ips, ",")
+		} else {
+			// TODO: better formatting of other types of answer, most importantly CNAME, AAAA, PTR
+			line += fmt.Sprintf("%v", resp.Answer)
 		}
-		line += strings.Join(ips, ",")
 	} else {
-		// TODO: better formatting of other types of answer, most importantly CNAME, AAAA, PTR
-		line += fmt.Sprintf(": %v", msg.Answer)
+		line += "(error)"
 	}
 	if overridden {
 		line += " (overridden)"
@@ -126,8 +135,8 @@ func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
 
 	r, _, err := c.Exchange(msg, d.Upstream)
 	if err != nil {
-		// TODO: not fatal
-		log.Fatal(err)
+		log.Printf("%v", err)
+		return nil
 	}
 
 	return r
