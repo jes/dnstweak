@@ -88,25 +88,25 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, req *dns.Msg, resp *dns.Msg, overri
 
 	if resp != nil {
 		switch req.Question[0].Qtype {
-		case dns.TypeA, dns.TypeAAAA:
+		case dns.TypeA, dns.TypeAAAA, dns.TypePTR:
 			ips := make([]string, 0)
 			for _, answer := range resp.Answer {
 				switch answer.(type) {
 				case *dns.A:
-					// TODO: where the answer is for a different domain than the one requested, somehow show this?
 					ips = append(ips, answer.(*dns.A).A.String())
 				case *dns.AAAA:
-					// TODO: where the answer is for a different domain than the one requested, somehow show this?
 					ips = append(ips, answer.(*dns.AAAA).AAAA.String())
 				case *dns.CNAME:
 					ips = append(ips, strings.TrimSuffix(answer.(*dns.CNAME).Target, "."))
+				case *dns.PTR:
+					ips = append(ips, strings.TrimSuffix(answer.(*dns.PTR).Ptr, "."))
 				default:
 					ips = append(ips, answer.String())
 				}
 			}
 			line += strings.Join(ips, ",")
 		default:
-			// TODO: AAAA, PTR, more?
+			// TODO: SRV, more?
 			line += fmt.Sprintf("%v", resp.Answer)
 		}
 	} else {
