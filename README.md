@@ -74,6 +74,15 @@ It was an A lookup for `example.com`, and we returned `127.0.0.1`. Back in the o
 
 Great success.
 
+## Installation
+
+Either get a binary from the [Releases](https://github.com/jes/dnstweak/releases/) page, and:
+
+    $ sudo cp dnstweak.x86_64 /usr/bin/dnstweak
+    $ sudo chmod +x /usr/bin/dnstweak
+
+Or build it yourself (see below).
+
 ## Usage
 
     dnstweak v0.1
