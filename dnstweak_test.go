@@ -73,15 +73,28 @@ func dnsQuery(addr string, host string) (*dns.Msg, error) {
 func checkAnswer(addr string, host string, ip string, test string, t *testing.T) {
 	r, err := dnsQuery(addr, host)
 	if err != nil {
-		t.Errorf("%s: expected success (@%s: %s), got error: %v", test, addr, host, err)
+		t.Errorf("%s: (@%s: %s): expected success, got error: %v", test, addr, host, err)
+		return
 	}
-	_ = r
+	if len(r.Answer) != 1 {
+		t.Errorf("%s: (@%s: %s): expected 1 answer, got %d: %v", test, addr, host, len(r.Answer), r.Answer)
+		return
+	}
+	switch r.Answer[0].(type) {
+	case *dns.A:
+		ans := r.Answer[0].(*dns.A)
+		if ans.A.String() != ip {
+			t.Errorf("%s: (@%s: %s): expected %s, got %s: %v", test, addr, host, ip, ans.A, r.Answer)
+		}
+	default:
+		t.Errorf("%s (@%s: %s): expected answer to be A record: %v", test, addr, host, r.Answer)
+	}
 }
 
 func checkNoAnswer(addr string, host string, test string, t *testing.T) {
 	r, err := dnsQuery(addr, host)
 	if err == nil {
-		t.Errorf("%s: expected failure (@%s: %s), got response: %v", test, addr, host, r.Answer)
+		t.Errorf("%s (@%s: %s): expected failure, got response: %v", test, addr, host, r.Answer)
 	}
 }
 
