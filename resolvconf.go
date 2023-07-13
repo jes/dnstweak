@@ -18,6 +18,10 @@ func UpdateResolvConf(resolver string) (string, string, error) {
 	defer f.Close()
 
 	newContent := "# created by dnstweak\n"
+	if strings.Contains(resolver, ":") {
+		// strip port number, if any
+		resolver, _, _ = strings.Cut(resolver, ":")
+	}
 	newContent += "nameserver " + resolver + "\n"
 
 	oldResolver := ""
