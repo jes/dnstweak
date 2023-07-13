@@ -20,6 +20,7 @@ type DnsTweak struct {
 	LookInProc           bool
 	OldResolvConf        string
 	Server               *dns.Server
+	PleaseExit           bool
 }
 
 func A_record(name string, ipaddr net.IP) *dns.A {
@@ -178,12 +179,12 @@ func (d *DnsTweak) HandleSignals() {
 
 	sig := <-c
 	log.Printf("received signal: %v\n", sig)
+	d.PleaseExit = true
 	d.Finish()
-	os.Exit(0)
 }
 
 func (d *DnsTweak) Finish() {
-	if d.SpliceIntoResolvConf {
+	if d.SpliceIntoResolvConf && d.OldResolvConf != "" {
 		err := RestoreResolvConf(d.OldResolvConf)
 		if err != nil {
 			log.Printf("%v", err)
@@ -226,6 +227,9 @@ func (d *DnsTweak) ListenAndServe(addr string) error {
 		err = d.Server.ListenAndServe()
 		if err != nil {
 			log.Printf("%v\n", err)
+		}
+		if d.PleaseExit {
+			os.Exit(0)
 		}
 		d.Finish() // just in case resolv.conf needs restoring
 	}
