@@ -33,10 +33,10 @@ func A_record(name string, ipaddr net.IP) *dns.A {
 	}
 }
 
-func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
-	if len(msg.Question) != 1 {
+func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
+	if len(req.Question) != 1 {
 		// TODO: not fatal
-		log.Fatal("unsupported question set length: %d (expected 1)", len(msg.Question))
+		log.Fatal("unsupported question set length: %d (expected 1)", len(req.Question))
 	}
 
 	clientProcess := ""
@@ -49,20 +49,20 @@ func (d *DnsTweak) ServeDNS(w dns.ResponseWriter, msg *dns.Msg) {
 		}
 	}
 
-	r, overridden := d.Response(msg)
+	resp, overridden := d.Response(req)
 	if !overridden {
-		r = d.PassThrough(msg)
+		resp = d.PassThrough(req)
 	}
 
-	d.Log(w, msg, r, overridden, clientProcess)
-	if r != nil {
-		w.WriteMsg(r)
+	d.Log(w, req, resp, overridden, clientProcess)
+	if resp != nil {
+		w.WriteMsg(resp)
 	}
 }
 
-func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, resp *dns.Msg, overridden bool, client string) {
-	qtype := dns.Type(msg.Question[0].Qtype)
-	name := msg.Question[0].Name
+func (d *DnsTweak) Log(w dns.ResponseWriter, req *dns.Msg, resp *dns.Msg, overridden bool, client string) {
+	qtype := dns.Type(req.Question[0].Qtype)
+	name := req.Question[0].Name
 
 	// strip trailing dot from FQDN
 	if name[len(name)-1] == '.' {
@@ -79,7 +79,7 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, resp *dns.Msg, overri
 
 	if resp != nil {
 		// format answer for A queries only
-		if msg.Question[0].Qtype == dns.TypeA {
+		if req.Question[0].Qtype == dns.TypeA {
 			ips := make([]string, 0)
 			for _, answer := range resp.Answer {
 				switch answer.(type) {
@@ -105,9 +105,9 @@ func (d *DnsTweak) Log(w dns.ResponseWriter, msg *dns.Msg, resp *dns.Msg, overri
 	log.Printf("%s\n", line)
 }
 
-func (d *DnsTweak) Response(msg *dns.Msg) (*dns.Msg, bool) {
-	qtype := msg.Question[0].Qtype
-	name := msg.Question[0].Name
+func (d *DnsTweak) Response(req *dns.Msg) (*dns.Msg, bool) {
+	qtype := req.Question[0].Qtype
+	name := req.Question[0].Name
 
 	if qtype != dns.TypeA {
 		return nil, false
@@ -118,28 +118,28 @@ func (d *DnsTweak) Response(msg *dns.Msg) (*dns.Msg, bool) {
 		return nil, false
 	}
 
-	r := new(dns.Msg)
-	r.SetReply(msg)
+	resp := new(dns.Msg)
+	resp.SetReply(req)
 	for _, ipaddr := range override {
-		r.Answer = append(r.Answer, A_record(name, ipaddr))
+		resp.Answer = append(resp.Answer, A_record(name, ipaddr))
 	}
-	rand.Shuffle(len(r.Answer), func(i, j int) {
-		r.Answer[i], r.Answer[j] = r.Answer[j], r.Answer[i]
+	rand.Shuffle(len(resp.Answer), func(i, j int) {
+		resp.Answer[i], resp.Answer[j] = resp.Answer[j], resp.Answer[i]
 	})
 
-	return r, true
+	return resp, true
 }
 
-func (d *DnsTweak) PassThrough(msg *dns.Msg) *dns.Msg {
+func (d *DnsTweak) PassThrough(req *dns.Msg) *dns.Msg {
 	c := new(dns.Client)
 
-	r, _, err := c.Exchange(msg, d.Upstream)
+	resp, _, err := c.Exchange(req, d.Upstream)
 	if err != nil {
 		log.Printf("%v", err)
 		return nil
 	}
 
-	return r
+	return resp
 }
 
 func (d *DnsTweak) SetupResolvConf(server dns.Server) {
